@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact — LUXORA</title>
+  <link rel="icon" href="images/misc/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <div class="breadcrumb"><a href="index.html">Home</a> / Contact</div>
+        <h1>Get in Touch</h1>
+        <p>Our concierge team is here to assist you.</p>
+      </div>
+    </section>
+    <section class="section-sm">
+      <div class="container">
+        <div class="contact-grid">
+          <div class="contact-info">
+            <div class="ci"><div class="ci-ico">✉</div><div><strong>Email</strong><div class="muted" id="cEmail">care@luxora.com</div></div></div>
+            <div class="ci"><div class="ci-ico">☎</div><div><strong>Phone</strong><div class="muted" id="cPhone">+1 (800) 555-0199</div></div></div>
+            <div class="ci"><div class="ci-ico">⌂</div><div><strong>Boutique</strong><div class="muted" id="cAddr">500 Luxury Ave, New York, NY 10001</div></div></div>
+            <div class="ci"><div class="ci-ico">⏱</div><div><strong>Hours</strong><div class="muted">Mon–Sat 10:00–20:00 · Sun 12:00–18:00</div></div></div>
+            <div class="map-placeholder"><img src="images/misc/contact.svg" alt="Map" style="width:100%"></div>
+          </div>
+          <form class="glass" style="padding:30px" id="contactForm" novalidate>
+            <div class="field"><label>Name</label><input name="name" required><div class="error-msg">Required.</div></div>
+            <div class="field"><label>Email</label><input name="email" type="email" required><div class="error-msg">Valid email required.</div></div>
+            <div class="field"><label>Subject</label><input name="subject" required><div class="error-msg">Required.</div></div>
+            <div class="field"><label>Message</label><textarea name="message" required></textarea><div class="error-msg">Please enter a message.</div></div>
+            <button type="submit" class="btn btn-gold btn-block">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer id="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/currency.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/contact.js"></script>
+</body>
+</html>

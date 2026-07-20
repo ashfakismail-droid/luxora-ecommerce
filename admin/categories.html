@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categories — LUXORA Admin</title>
+  <link rel="icon" href="../images/misc/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="admin-shell" id="adminShell"></div>
+  <div class="modal-overlay" id="catModal">
+    <div class="modal">
+      <h3 id="catModalTitle">Add Category</h3>
+      <form id="catForm">
+        <input type="hidden" name="id">
+        <div class="field"><label>Name</label><input name="name" required><div class="error-msg">Required.</div></div>
+        <div class="field"><label>Image Path</label><input name="image" placeholder="images/categories/footwear.svg"></div>
+        <div class="field"><label>Description</label><textarea name="description"></textarea></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="cancelCat">Cancel</button>
+          <button type="submit" class="btn btn-gold">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="../js/data.js"></script>
+  <script src="../js/currency.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/categories.js"></script>
+</body>
+</html>

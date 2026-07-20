@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coupons — LUXORA Admin</title>
+  <link rel="icon" href="../images/misc/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="admin-shell" id="adminShell"></div>
+  <div class="modal-overlay" id="couponModal">
+    <div class="modal">
+      <h3 id="couponTitle">Add Coupon</h3>
+      <form id="couponForm">
+        <input type="hidden" name="idx">
+        <div class="field-row">
+          <div class="field"><label>Code</label><input name="code" required><div class="error-msg">Required.</div></div>
+          <div class="field"><label>Type</label><select name="type"><option value="percent">Percent %</option><option value="flat">Flat amount</option></select></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Value</label><input name="value" type="number" step="0.01" required><div class="error-msg">Required.</div></div>
+          <div class="field"><label>Min Order (USD)</label><input name="min" type="number" value="0"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Expires</label><input name="expires" type="date"></div>
+          <div class="field"><label>Active</label><select name="active"><option value="true">Yes</option><option value="false">No</option></select></div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="cancelCoupon">Cancel</button>
+          <button type="submit" class="btn btn-gold">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="../js/data.js"></script>
+  <script src="../js/currency.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/coupons.js"></script>
+</body>
+</html>

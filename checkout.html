@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — LUXORA</title>
+  <link rel="icon" href="images/misc/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <div class="breadcrumb"><a href="index.html">Home</a> / <a href="cart.html">Cart</a> / Checkout</div>
+        <h1>Checkout</h1>
+      </div>
+    </section>
+    <section class="section-sm">
+      <div class="container">
+        <div class="checkout-layout">
+          <form class="checkout-form glass" id="checkoutForm" novalidate>
+            <h3>Customer Information</h3>
+            <div class="field-row">
+              <div class="field"><label>Full Name</label><input name="name" required><div class="error-msg">Please enter your name.</div></div>
+              <div class="field"><label>Email</label><input name="email" type="email" required><div class="error-msg">Enter a valid email.</div></div>
+            </div>
+            <div class="field"><label>Phone</label><input name="phone" required><div class="error-msg">Please enter your phone.</div></div>
+
+            <h3>Shipping Address</h3>
+            <div class="field"><label>Address</label><input name="address" required><div class="error-msg">Address is required.</div></div>
+            <div class="field-row">
+              <div class="field"><label>City</label><input name="city" required><div class="error-msg">Required.</div></div>
+              <div class="field"><label>Postal Code</label><input name="zip" required><div class="error-msg">Required.</div></div>
+            </div>
+            <div class="field"><label>Country</label><input name="country" value="United States" required><div class="error-msg">Required.</div></div>
+
+            <h3>Billing Address</h3>
+            <label style="display:flex;gap:9px;align-items:center;color:var(--text-dim);font-size:14px;margin-bottom:14px"><input type="checkbox" id="sameAsShip" checked> Same as shipping address</label>
+            <div id="billingFields" style="display:none">
+              <div class="field"><label>Billing Address</label><input name="b_address"><div class="error-msg">Required.</div></div>
+              <div class="field-row">
+                <div class="field"><label>City</label><input name="b_city"></div>
+                <div class="field"><label>Postal Code</label><input name="b_zip"></div>
+              </div>
+              <div class="field"><label>Country</label><input name="b_country" value="United States"></div>
+            </div>
+
+            <h3>Payment Method</h3>
+            <div class="pay-methods" id="payMethods">
+              <label class="pay-method active"><input type="radio" name="pay" value="card" checked><div><div class="pm-name">Credit / Debit Card</div><div class="pm-desc">Visa, Mastercard, Amex — secured</div></div></label>
+              <label class="pay-method"><input type="radio" name="pay" value="paypal"><div><div class="pm-name">PayPal</div><div class="pm-desc">Pay with your PayPal balance</div></div></label>
+              <label class="pay-method"><input type="radio" name="pay" value="apple"><div><div class="pm-name">Apple Pay</div><div class="pm-desc">Quick checkout with Apple Pay</div></div></label>
+              <label class="pay-method"><input type="radio" name="pay" value="cod"><div><div class="pm-name">Cash on Delivery</div><div class="pm-desc">Pay when you receive</div></div></label>
+            </div>
+            <div id="cardFields" style="margin-top:16px">
+              <div class="field"><label>Card Number</label><input name="card" placeholder="1234 5678 9012 3456"><div class="error-msg">Enter a valid card number.</div></div>
+              <div class="field-row">
+                <div class="field"><label>Expiry</label><input name="exp" placeholder="MM/YY"></div>
+                <div class="field"><label>CVC</label><input name="cvc" placeholder="123"></div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-gold btn-block" style="margin-top:24px" id="placeOrder">Place Order</button>
+          </form>
+
+          <aside class="summary glass" id="checkoutSummary"></aside>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer id="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/currency.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/checkout.js"></script>
+</body>
+</html>

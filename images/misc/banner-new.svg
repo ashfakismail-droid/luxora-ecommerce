@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <defs><linearGradient id="n" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#101418"/><stop offset="1" stop-color="#1c2530"/></linearGradient></defs>
+  <rect width="1200" height="400" fill="url(#n)"/>
+  <text x="600" y="180" font-family="Georgia, serif" font-size="80" text-anchor="middle" fill="#c9a24b" letter-spacing="6">NEW ARRIVALS</text>
+  <text x="600" y="260" font-family="Arial" font-size="34" text-anchor="middle" fill="#e8e8ee" letter-spacing="3">DISCOVER THE LATEST COLLECTION</text>
+</svg>

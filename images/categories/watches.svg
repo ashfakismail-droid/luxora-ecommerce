@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16161c"/>
+      <stop offset="1" stop-color="#26262e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.4" r="0.7">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <rect width="800" height="800" fill="url(#glow)"/>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1">
+    <circle cx="400" cy="400" r="300"/>
+    <circle cx="400" cy="400" r="220"/>
+  </g>
+  <g transform="translate(400 400)">
+    <rect x="-70" y="-200" width="140" height="120" rx="20" fill="#111"/>
+    <rect x="-70" y="80" width="140" height="120" rx="20" fill="#111"/>
+    <circle cx="0" cy="0" r="150" fill="#0d0d10" stroke="#c9a24b" stroke-width="10"/>
+    <circle cx="0" cy="0" r="120" fill="#15151a"/>
+    <g stroke="#e8e8ee" stroke-width="6" stroke-linecap="round">
+      <line x1="0" y1="0" x2="0" y2="-80"/>
+      <line x1="0" y1="0" x2="55" y2="20"/>
+    </g>
+    <circle cx="0" cy="0" r="8" fill="#c9a24b"/>
+    <g stroke="#c9a24b" stroke-width="4">
+      <line x1="0" y1="-120" x2="0" y2="-100"/>
+      <line x1="120" y1="0" x2="100" y2="0"/>
+      <line x1="0" y1="120" x2="0" y2="100"/>
+      <line x1="-120" y1="0" x2="-100" y2="0"/>
+    </g>
+  </g>
+</svg>

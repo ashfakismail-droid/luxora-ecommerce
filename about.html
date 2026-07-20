@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — LUXORA</title>
+  <link rel="icon" href="images/misc/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <div class="breadcrumb"><a href="index.html">Home</a> / About</div>
+        <h1>Our Story</h1>
+        <p>Redefining modern luxury, one piece at a time.</p>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
+        <div class="about-grid">
+          <div class="about-img"><img src="images/misc/about.svg" alt="LUXORA atelier"></div>
+          <div>
+            <h2 style="font-size:34px;margin-bottom:16px">Crafted for the Extraordinary</h2>
+            <p class="muted">LUXORA was born from a simple belief: luxury should be effortless, enduring and deeply personal. We partner with the world's finest ateliers to bring you fashion and lifestyle pieces that transcend trends.</p>
+            <p class="muted">Every product in our collection is selected for its craftsmanship, provenance and the quiet confidence it brings to those who wear it.</p>
+            <a href="shop.html" class="btn btn-gold" style="margin-top:14px">Explore the Collection</a>
+          </div>
+        </div>
+
+        <div class="value-grid">
+          <div class="value-card glass"><div class="v-ico">◆</div><h3>Authenticity</h3><p class="muted">Every piece is guaranteed authentic and sourced from verified houses.</p></div>
+          <div class="value-card glass"><div class="v-ico">✦</div><h3>Craftsmanship</h3><p class="muted">We celebrate the artisans whose hands shape each detail.</p></div>
+          <div class="value-card glass"><div class="v-ico">❖</div><h3>Experience</h3><p class="muted">From browsing to unboxing, luxury is in every moment.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
+        <div class="newsletter">
+          <h2>Become a LUXORA Member</h2>
+          <p class="muted">Enjoy early access, private sales and personal styling.</p>
+          <form class="newsletter-form" data-newsletter>
+            <input type="email" required placeholder="Enter your email" aria-label="Email">
+            <button type="submit" class="btn btn-gold">Join</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer id="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/currency.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const nf = document.querySelector('[data-newsletter]');
+      if (nf) nf.addEventListener('submit', (e) => { e.preventDefault(); nf.reset(); window.LUXORA_UI.toast('Welcome to LUXORA!', 'success'); });
+    });
+  </script>
+</body>
+</html>

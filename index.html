@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LUXORA — Luxury Fashion & Lifestyle</title>
+  <meta name="description" content="LUXORA — curated luxury fashion and lifestyle essentials.">
+  <link rel="icon" href="images/misc/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <img src="images/misc/hero.svg" alt="" class="hero-bg">
+      <div class="container hero-content">
+        <div class="hero-eyebrow">New Collection 2026</div>
+        <h1>Define Your<br>Luxury.</h1>
+        <p>Discover a curated world of premium fashion, fine accessories and timeless design — crafted for those who settle for nothing less than extraordinary.</p>
+        <div class="hero-actions">
+          <a href="shop.html" class="btn btn-gold">Shop Collection</a>
+          <a href="about.html" class="btn btn-outline">Our Story</a>
+        </div>
+        <div class="hero-stats">
+          <div><div class="stat-num">120+</div><div class="stat-label">Luxury Pieces</div></div>
+          <div><div class="stat-num">8</div><div class="stat-label">Premium Brands</div></div>
+          <div><div class="stat-num">50k+</div><div class="stat-label">Happy Clients</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURED COLLECTIONS -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div><h2>Featured Collections</h2><div class="sub">Explore our most coveted categories.</div></div>
+          <a href="shop.html" class="link">View all →</a>
+        </div>
+        <div class="cat-grid" id="homeCategories"></div>
+      </div>
+    </section>
+
+    <!-- FEATURED PRODUCTS -->
+    <section class="section section-sm">
+      <div class="container">
+        <div class="section-head">
+          <div><h2>Featured Products</h2><div class="sub">Hand-picked for the season.</div></div>
+          <a href="shop.html" class="link">Shop all →</a>
+        </div>
+        <div class="product-grid" id="homeFeatured"></div>
+      </div>
+    </section>
+
+    <!-- BANNER -->
+    <section class="section-sm">
+      <div class="container">
+        <a href="shop.html?filter=sale" class="banner"><img src="images/misc/banner-sale.svg" alt="Season Sale"></a>
+      </div>
+    </section>
+
+    <!-- NEW ARRIVALS -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div><h2>New Arrivals</h2><div class="sub">The latest drops, just landed.</div></div>
+          <a href="shop.html?filter=new" class="link">View all →</a>
+        </div>
+        <div class="product-grid" id="homeNew"></div>
+      </div>
+    </section>
+
+    <!-- BEST SELLERS -->
+    <section class="section section-sm">
+      <div class="container">
+        <div class="section-head">
+          <div><h2>Best Sellers</h2><div class="sub">Loved by our community.</div></div>
+          <a href="shop.html?filter=best" class="link">View all →</a>
+        </div>
+        <div class="product-grid" id="homeBest"></div>
+      </div>
+    </section>
+
+    <!-- LUXURY BRANDS -->
+    <section class="section">
+      <div class="container">
+        <div class="section-head"><div><h2>Luxury Brands</h2><div class="sub">Partnered with the finest houses.</div></div></div>
+        <div class="brand-strip" id="homeBrands"></div>
+      </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="section section-sm">
+      <div class="container">
+        <div class="section-head text-center" style="justify-content:center"><div><h2>What Clients Say</h2><div class="sub">Trusted by connoisseurs worldwide.</div></div></div>
+        <div class="testi-grid" id="homeTesti"></div>
+      </div>
+    </section>
+
+    <!-- NEWSLETTER -->
+    <section class="section-sm">
+      <div class="container">
+        <div class="newsletter">
+          <h2>Join the Inner Circle</h2>
+          <p class="muted">Be the first to access private sales, new arrivals and exclusive events.</p>
+          <form class="newsletter-form" data-newsletter>
+            <input type="email" required placeholder="Enter your email" aria-label="Email">
+            <button type="submit" class="btn btn-gold">Subscribe</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/currency.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/home.js"></script>
+</body>
+</html>

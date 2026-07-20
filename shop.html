@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop — LUXORA</title>
+  <meta name="description" content="Browse the full LUXORA luxury collection.">
+  <link rel="icon" href="images/misc/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <div class="breadcrumb"><a href="index.html">Home</a> / Shop</div>
+        <h1>The Collection</h1>
+        <p>Every piece, meticulously curated.</p>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
+        <div class="shop-layout">
+          <!-- Mobile filter trigger (hidden on desktop) -->
+          <div class="mobile-filter-bar" id="mobileFilterBar">
+        <button class="btn btn-outline" id="openSearch" type="button">🔍 Search</button>
+          </div>
+
+          <!-- FILTERS -->
+          <aside class="filters glass" id="filtersPanel">
+            <div class="drawer-head">
+              <h3 style="margin:0">Filters</h3>
+              <button class="drawer-close" id="closeFilters" type="button" aria-label="Close filters">✕</button>
+            </div>
+            <h3>Search</h3>
+            <div class="field" style="margin:0">
+              <input type="text" id="searchInput" placeholder="Search products…" aria-label="Search">
+            </div>
+
+            <h3>Category</h3>
+            <div class="filter-group" id="catFilter"></div>
+
+            <h3>Brand</h3>
+            <div class="filter-group" id="brandFilter"></div>
+
+            <h3>Price Range</h3>
+            <div class="filter-group">
+              <label>Min <input type="number" id="priceMin" placeholder="0" style="width:80px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text)"></label>
+              <label>Max <input type="number" id="priceMax" placeholder="5000" style="width:80px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text)"></label>
+            </div>
+
+            <h3>Rating</h3>
+            <div class="filter-group" id="ratingFilter"></div>
+
+            <h3>Availability</h3>
+            <div class="filter-group">
+              <label><input type="checkbox" id="inStockOnly"> In stock only</label>
+            </div>
+
+            <button class="btn btn-outline btn-block filter-reset" id="resetFilters">Reset Filters</button>
+            <button class="btn btn-gold btn-block filter-apply" id="applyFilters" type="button">Apply Filters</button>
+          </aside>
+          <div class="filter-backdrop" id="filterBackdrop"></div>
+
+          <!-- MOBILE SEARCH PANEL (mobile only) -->
+          <aside class="search-drawer" id="searchPanel" aria-hidden="true">
+            <div class="drawer-head">
+              <h3>Search</h3>
+              <button class="drawer-close" id="closeSearch" aria-label="Close search">✕</button>
+            </div>
+            <div class="field">
+              <input type="search" id="searchInputMobile" placeholder="Search products…" autocomplete="off">
+            </div>
+            <button class="btn btn-gold btn-block" id="applySearch" type="button">Search</button>
+          </aside>
+
+          <!-- RESULTS -->
+          <div>
+            <div class="shop-toolbar">
+              <div class="left" id="resultCount"></div>
+              <div class="right">
+                <select id="sortSelect" aria-label="Sort">
+                  <option value="featured">Featured</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                  <option value="rating">Top Rated</option>
+                  <option value="name">Name A–Z</option>
+                </select>
+                <div class="view-toggle">
+                  <button id="gridView" class="active" aria-label="Grid view">▦</button>
+                  <button id="listView" aria-label="List view">☰</button>
+                </div>
+              </div>
+            </div>
+            <div class="product-grid shop-grid" id="shopGrid"></div>
+            <div class="pagination" id="pagination"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer id="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/currency.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/shop.js"></script>
+</body>
+</html>

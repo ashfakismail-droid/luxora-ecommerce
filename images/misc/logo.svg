@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="40" fill="#111116"/>
+  <text x="100" y="78" font-family="Georgia, serif" font-size="40" letter-spacing="2" text-anchor="middle" fill="#c9a24b">LUX</text>
+  <text x="100" y="128" font-family="Georgia, serif" font-size="40" letter-spacing="2" text-anchor="middle" fill="#e8e8ee">ORA</text>
+  <line x1="60" y1="145" x2="140" y2="145" stroke="#c9a24b" stroke-width="2"/>
+</svg>
