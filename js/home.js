@@ -3,8 +3,10 @@
   'use strict';
   const DB = window.LUXORA_DB, UI = window.LUXORA_UI, CUR = window.LUXORA_CURRENCY;
 
-  function render() {
-    const products = DB.getProducts();
+  async function render() {
+    const response = await ProductAPI.getAll();
+    const products = response.data;
+    
     const cats = DB.getCategories();
     const brands = DB.getBrands();
 

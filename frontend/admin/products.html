@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products — LUXORA Admin</title>
+  <link rel="icon" href="../assets/images/misc/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+  <div class="admin-shell" id="adminShell"></div>
+
+  <!-- Product modal -->
+  <div class="modal-overlay" id="productModal">
+    <div class="modal">
+      <h3 id="modalTitle">Add Product</h3>
+      <form id="productForm">
+        <input type="hidden" name="id">
+        <div class="field-row">
+          <div class="field"><label>Name</label><input name="name" required><div class="error-msg">Required.</div></div>
+          <div class="field"><label>Brand</label><select name="brand" id="brandSelect"></select></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Category</label><select name="category" id="catSelect"></select></div>
+          <div class="field"><label>Status</label><select name="status"><option value="active">Active</option><option value="out">Out of Stock</option></select></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Price (USD)</label><input name="price" type="number" step="0.01" required><div class="error-msg">Required.</div></div>
+          <div class="field"><label>Sale Price (USD, 0 = none)</label><input name="salePrice" type="number" step="0.01" value="0"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Stock</label><input name="stock" type="number" required><div class="error-msg">Required.</div></div>
+          <div class="field"><label>Rating</label><input name="rating" type="number" step="0.1" min="0" max="5" value="4.5"></div>
+        </div>
+        <div class="field"><label>Description</label><textarea name="description"></textarea></div>
+        <div class="field">
+          <label>Colors</label>
+          <div id="colorPickerWrap" class="color-picker-wrap"></div>
+          <button type="button" class="btn btn-outline btn-sm" id="addColorBtn">+ Add Color</button>
+          <input type="hidden" name="colors" id="colorsInput">
+        </div>
+        <div class="field"><label>Sizes (comma separated)</label><input name="sizes" placeholder="S, M, L"></div>
+        <div class="field"><label>Tags (comma separated)</label><input name="tags" placeholder="shoes, sneakers"></div>
+        <div class="checkbox-row" style="margin-bottom:16px">
+          <label><input type="checkbox" name="featured"> Featured</label>
+          <label><input type="checkbox" name="bestSeller"> Best Seller</label>
+          <label><input type="checkbox" name="newArrival"> New Arrival</label>
+        </div>
+        <div class="field"><label>Product Image</label>
+          <div class="img-upload">
+            <img id="imgPreview" class="img-preview" src="../assets/images/products/shoes-0.jpg" alt="preview">
+            <div>
+              <input type="file" id="imgInput" accept="image/*">
+              <div class="cell-sub" style="margin-top:6px">Optional. Leave empty to keep current image.</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="cancelProduct">Cancel</button>
+          <button type="submit" class="btn btn-gold">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/currency.js"></script>
+  <script src="../assets/js/admin.js"></script>
+  <script src="../assets/js/products.js"></script>
+</body>
+</html>

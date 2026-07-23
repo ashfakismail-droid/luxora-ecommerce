@@ -296,9 +296,9 @@
         <div class="card-body">
           <span class="card-brand">${p.brand}</span>
           <a href="product.html?id=${p.id}" class="card-title">${p.name}</a>
-          <div class="card-rating">${stars(p.rating)} <span>(${p.reviews})</span></div>
+          <div class="card-rating">${stars(p.rating)} <span>(${p.reviews ?? 0})</span></div>
           <div class="card-price">
-            <span class="card-now" data-price="${price}">${CUR.format(price)}</span>
+            <span class="card-now">₹${price}</span>
             ${old}
           </div>
           <div class="card-actions">
