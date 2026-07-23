@@ -434,9 +434,13 @@ function resetFilters() {
     priceMin: '',
     priceMax: '',
     ratingFilter: 0,
+    inStockOnly: false,
     brands: [],
     filters: []
   };
+  // Sync the in-stock checkbox with the reset state
+  const inStockOnly = document.getElementById('inStockOnly');
+  if (inStockOnly) inStockOnly.checked = false;
   applyFiltersAndSort();
 }
 
@@ -448,6 +452,7 @@ const shopState = {
     priceMin: '',
     priceMax: '',
     ratingFilter: 0,
+    inStockOnly: false,
     brands: [],
     filters: []
   },
@@ -554,6 +559,15 @@ function setupEventListeners() {
   const resetFiltersBtn = document.getElementById('resetFilters');
   if (resetFiltersBtn) {
     resetFiltersBtn.addEventListener('click', resetFilters);
+  }
+
+  // In-stock availability toggle
+  const inStockOnly = document.getElementById('inStockOnly');
+  if (inStockOnly) {
+    inStockOnly.addEventListener('change', (e) => {
+      shopState.filters.inStockOnly = e.target.checked;
+      applyFiltersAndSort();
+    });
   }
   
   // Apply filters button
