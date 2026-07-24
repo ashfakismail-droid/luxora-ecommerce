@@ -5,7 +5,9 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "seed:demo-products": "node scripts/import-demo-products.js",
+    "seed:demo-products:dry-run": "node scripts/import-demo-products.js --dry-run"
   },
   "keywords": ["ecommerce", "luxora", "api", "express", "supabase"],
   "license": "MIT",

@@ -1,26 +1,74 @@
 /* LUXORA - Admin Products */
 (function () {
   'use strict';
-  const DB = window.LUXORA_DB, CUR = window.LUXORA_CURRENCY, ADMIN = window.LUXORA_ADMIN;
+  const CUR = window.LUXORA_CURRENCY, ADMIN = window.LUXORA_ADMIN;
   ADMIN.requireAuth();
   ADMIN.renderShell();
   const root = document.getElementById('adminContent');
   let pendingImage = null;
+  let products = [];
+  let categories = [];
 
   function priceOf(p) { return (p.salePrice && p.salePrice > 0) ? p.salePrice : p.price; }
+  function slugify(value) { return String(value || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'product'; }
+  function normalizeProduct(p) {
+    return {
+      id: String(p.id),
+      name: p.name || '',
+      slug: p.slug || slugify(p.name),
+      brand: p.brand || '',
+      category: p.category || '',
+      status: p.is_active === false || Number(p.stock || 0) === 0 ? 'out' : 'active',
+      price: Number(p.price || 0),
+      salePrice: Number(p.compare_at_price || 0),
+      stock: Number(p.stock || 0),
+      rating: Number(p.rating || 0),
+      reviews: Number(p.reviews_count || 0),
+      description: p.description || '',
+      colors: Array.isArray(p.colors) ? p.colors : [],
+      sizes: Array.isArray(p.sizes) ? p.sizes : [],
+      tags: Array.isArray(p.tags) ? p.tags : [],
+      featured: !!p.featured,
+      bestSeller: !!p.best_seller,
+      newArrival: !!p.new_arrival,
+      image: p.image || '../images/products/shoes-0.jpg',
+      images: Array.isArray(p.images) ? p.images : []
+    };
+  }
+  function normalizeCategory(c) { return { id: c.slug || c.name || String(c.id), name: c.name || c.slug || String(c.id) }; }
+  function apiData(result) { return result && result.data ? result.data : []; }
+  function currentProduct(id) { return products.find(p => String(p.id) === String(id)); }
+  function uniqueBrands() {
+    const values = products.map(p => p.brand).filter(Boolean);
+    return [...new Set(values)].sort((a, b) => a.localeCompare(b));
+  }
+
+  async function loadData() {
+    ADMIN.showLoading(root);
+    try {
+      const [productResult, categoryResult] = await Promise.all([
+        ADMIN.apiRequest('/products'),
+        ADMIN.apiRequest('/categories')
+      ]);
+      products = apiData(productResult).map(normalizeProduct);
+      categories = apiData(categoryResult).map(normalizeCategory);
+      render();
+    } catch (err) {
+      root.innerHTML = `<div class="panel empty-state">${err.message || 'Failed to load products.'}</div>`;
+      ADMIN.toast(err.message || 'Failed to load products.', 'error');
+    } finally {
+      ADMIN.hideLoading(root);
+    }
+  }
 
   function render() {
-    const products = DB.getProducts();
-    const cats = DB.getCategories();
-    const brands = DB.getBrands();
-
-    ADMIN.showLoading(root);
-    setTimeout(() => ADMIN.hideLoading(root), 250);
+    const cats = categories;
+    const brands = uniqueBrands();
 
     root.innerHTML = `
       <div class="toolbar">
         <div class="search"><input type="text" id="search" placeholder="Search products…"></div>
-        <select id="filterCat"><option value="">All Categories</option>${cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}</select>
+        <select id="filterCat"><option value="">All Categories</option>${cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('')}</select>
         <select id="filterStatus"><option value="">All Status</option><option value="active">Active</option><option value="out">Out of Stock</option></select>
         <button class="btn btn-gold" id="addBtn">+ Add Product</button>
       </div>
@@ -34,8 +82,8 @@
       </div>`;
 
     // populate selects in modal
-    document.getElementById('brandSelect').innerHTML = brands.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-    document.getElementById('catSelect').innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    document.getElementById('brandSelect').innerHTML = brands.map(b => `<option value="${b}">${b}</option>`).join('') + '<option value="">Other / none</option>';
+    document.getElementById('catSelect').innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
     bind();
     drawRows(products);
@@ -94,7 +142,7 @@
     const q = document.getElementById('search').value.toLowerCase();
     const cat = document.getElementById('filterCat').value;
     const st = document.getElementById('filterStatus').value;
-    let list = DB.getProducts();
+    let list = products.slice();
     if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q));
     if (cat) list = list.filter(p => p.category === cat);
     if (st) list = list.filter(p => p.status === st);
@@ -107,7 +155,8 @@
     pendingImage = null;
     const modal = document.getElementById('productModal');
     if (id) {
-      const p = DB.getProduct(id);
+      const p = currentProduct(id);
+      if (!p) { ADMIN.toast('Product not found', 'error'); return; }
       document.getElementById('modalTitle').textContent = 'Edit Product';
       f.elements['id'].value = p.id;
       f.elements['name'].value = p.name;
@@ -187,45 +236,51 @@
   }
   function closeModal() { document.getElementById('productModal').classList.remove('open'); }
 
-  function saveProduct(f) {
-    const products = DB.getProducts();
+  async function saveProduct(f) {
     const id = f.elements['id'].value;
     const data = {
       name: f.elements['name'].value.trim(),
+      slug: slugify(f.elements['name'].value.trim()),
       brand: f.elements['brand'].value,
       category: f.elements['category'].value,
-      status: f.elements['status'].value,
       price: parseFloat(f.elements['price'].value) || 0,
-      salePrice: parseFloat(f.elements['salePrice'].value) || 0,
+      compare_at_price: parseFloat(f.elements['salePrice'].value) || null,
       stock: parseInt(f.elements['stock'].value) || 0,
       rating: parseFloat(f.elements['rating'].value) || 4.5,
-      reviews: id ? (DB.getProduct(id).reviews || 0) : 0,
+      reviews_count: id && currentProduct(id) ? (currentProduct(id).reviews || 0) : 0,
       description: f.elements['description'].value.trim(),
-      colors: (f.elements['colors'].value || '').split(',').map(s => s.trim()).filter(Boolean),
-      sizes: f.elements['sizes'].value.split(',').map(s => s.trim()).filter(Boolean),
-      tags: f.elements['tags'].value.split(',').map(s => s.trim()).filter(Boolean),
-      featured: f.elements['featured'].checked,
-      bestSeller: f.elements['bestSeller'].checked,
-      newArrival: f.elements['newArrival'].checked
+      is_active: f.elements['status'].value === 'active' && (parseInt(f.elements['stock'].value) || 0) > 0,
+      updated_at: new Date().toISOString()
     };
     if (pendingImage) data.image = pendingImage;
+    else if (id && currentProduct(id)) data.image = currentProduct(id).image;
+
+    data.images = data.image ? [data.image] : [];
+
+    ADMIN.showLoading(root);
     if (id) {
-      const idx = products.findIndex(p => p.id === id);
-      products[idx] = { ...products[idx], ...data };
-      if (!pendingImage) data.image = products[idx].image;
-      products[idx] = data;
-      ADMIN.toast('Product updated', 'success');
+      try {
+        await ADMIN.apiRequest('/products/' + encodeURIComponent(id), { method: 'PUT', body: JSON.stringify(data) });
+        ADMIN.toast('Product updated', 'success');
+      } catch (err) {
+        ADMIN.toast(err.message || 'Failed to update product', 'error');
+        ADMIN.hideLoading(root);
+        return;
+      }
     } else {
-      const newId = 'p' + (Date.now());
-      data.id = newId;
-      data.images = [data.image || '../images/products/shoes-0.jpg'];
-      data.image = data.images[0];
-      products.unshift(data);
-      ADMIN.toast('Product added', 'success');
+      if (!data.image) data.image = '../images/products/shoes-0.jpg';
+      data.images = [data.image];
+      try {
+        await ADMIN.apiRequest('/products', { method: 'POST', body: JSON.stringify(data) });
+        ADMIN.toast('Product added', 'success');
+      } catch (err) {
+        ADMIN.toast(err.message || 'Failed to add product', 'error');
+        ADMIN.hideLoading(root);
+        return;
+      }
     }
-    DB.setProducts(products);
     closeModal();
-    render();
+    loadData();
   }
 
   function deleteProduct(id) {
@@ -236,12 +291,10 @@
       danger: true
     }).then(ok => {
       if (!ok) return;
-      DB.setProducts(DB.getProducts().filter(p => p.id !== id));
-      // Clean every reference to the deleted product so no orphan IDs remain
-      // in cart, wishlist or compare (single source of truth stays consistent).
-      DB.removeProductReferences(id);
-      ADMIN.toast('Product deleted', 'success');
-      render();
+      ADMIN.showLoading(root);
+      ADMIN.apiRequest('/products/' + encodeURIComponent(id), { method: 'DELETE' })
+        .then(() => { ADMIN.toast('Product deleted', 'success'); loadData(); })
+        .catch(err => { ADMIN.hideLoading(root); ADMIN.toast(err.message || 'Failed to delete product', 'error'); });
     });
   }
 
@@ -249,5 +302,5 @@
     document.querySelectorAll('[data-price]').forEach(el => { const v = parseFloat(el.getAttribute('data-price')); if (!isNaN(v)) el.textContent = CUR.format(v); });
   }
 
-  render();
+  loadData();
 })();

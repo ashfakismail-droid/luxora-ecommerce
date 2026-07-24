@@ -20,6 +20,12 @@
   // UI stays in sync without a page refresh.
   document.addEventListener('luxora:wishlist', render);
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
-  else render();
+  async function init() {
+    if (UI.syncProductCatalog) await UI.syncProductCatalog();
+    if (UI.syncWishlist) await UI.syncWishlist();
+    render();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();

@@ -3,15 +3,19 @@ const router = express.Router();
 const db = require('../config/database');
 const { success, error } = require('../utils/response');
 
-// Placeholder endpoints - will integrate with Supabase Auth
+const hasRequiredCredentials = (email, password) => {
+  return typeof email === 'string' && email.trim() && typeof password === 'string' && password.trim();
+};
+
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
+
+  if (!hasRequiredCredentials(email, password)) {
+    return error(res, 'Email and password are required', 400);
+  }
   
   if (!db.isConfigured) {
-    return success(res, { 
-      message: 'Login endpoint ready (configure Supabase for full auth)',
-      token: null 
-    }, 'Auth not configured');
+    return error(res, 'Authentication service is not configured', 503);
   }
   
   // Full Supabase auth integration
@@ -26,11 +30,13 @@ router.post('/login', async (req, res) => {
 
 router.post('/register', async (req, res) => {
   const { email, password, name } = req.body;
+
+  if (!hasRequiredCredentials(email, password)) {
+    return error(res, 'Email and password are required', 400);
+  }
   
   if (!db.isConfigured) {
-    return success(res, { 
-      message: 'Register endpoint ready (configure Supabase for full auth)' 
-    }, 'Auth not configured');
+    return error(res, 'Authentication service is not configured', 503);
   }
   
   const { data, error: authError } = await db.auth.signUp({
@@ -47,7 +53,7 @@ router.post('/register', async (req, res) => {
 
 router.post('/logout', async (req, res) => {
   if (!db.isConfigured) {
-    return success(res, { message: 'Logged out' }, 'Logout successful');
+    return error(res, 'Authentication service is not configured', 503);
   }
   
   const authHeader = req.headers.authorization;

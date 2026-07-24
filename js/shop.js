@@ -21,7 +21,7 @@ function normalizeProduct(backendProduct) {
   if (!backendProduct) return null;
   
   const p = {
-    id: backendProduct.id || 0,
+    id: backendProduct.id != null ? String(backendProduct.id) : '',
     name: backendProduct.name || '',
     slug: backendProduct.slug || '',
     description: backendProduct.description || '',
@@ -63,6 +63,37 @@ function normalizeProduct(backendProduct) {
 function getCategoryIds() {
   const categories = getCategories();
   return categories.map(cat => cat.id);
+}
+
+function resolveCategoryImage(category) {
+  const id = String(category?.id || '').trim().toLowerCase();
+  const image = String(category?.image || '').trim();
+
+  if (id === 'bags') return 'images/categories/bags.svg';
+  if (image) return image;
+  return id ? `images/categories/${id}.jpg` : '';
+}
+
+function getShopCategories() {
+  const categories = getCategories().map(cat => ({
+    ...cat,
+    image: resolveCategoryImage(cat)
+  }));
+  const seen = new Set(categories.map(cat => String(cat.id).toLowerCase()));
+
+  allProducts.forEach(product => {
+    const id = String(product.category || '').trim().toLowerCase();
+    if (!id || seen.has(id)) return;
+
+    seen.add(id);
+    categories.push({
+      id,
+      name: id.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase()),
+      image: resolveCategoryImage({ id })
+    });
+  });
+
+  return categories;
 }
 
 // Filtering logic
@@ -200,10 +231,7 @@ function renderPagination(container, totalProducts) {
   html += `<button class="btn btn-outline btn-sm" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">Previous</button>`;
   
   // Page numbers
-  const startPage = Math.max(1, currentPage - 2);
-  const endPage = Math.min(totalPages, currentPage + 2);
-  
-  for (let i = startPage; i <= endPage; i++) {
+  for (let i = 1; i <= totalPages; i++) {
     html += `<button class="btn ${currentPage === i ? 'btn-gold' : 'btn-outline'} btn-sm" onclick="changePage(${i})">${i}</button>`;
   }
   
@@ -216,12 +244,13 @@ function renderPagination(container, totalProducts) {
 
 // Change page
 function changePage(page) {
-  currentPage = page;
-  applyFiltersAndSort();
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / productsPerPage));
+  currentPage = Math.min(Math.max(1, page), totalPages);
+  render(false);
 }
 
 // Main render function
-function render() {
+function render(resetPage = true) {
   const state = shopState;
   
   // Apply filters
@@ -232,7 +261,8 @@ function render() {
   
   // Update state
   filteredProducts = filtered;
-  currentPage = 1;
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / productsPerPage));
+  currentPage = resetPage ? 1 : Math.min(Math.max(1, currentPage), totalPages);
   
   // Render
   renderProducts(filtered);
@@ -240,7 +270,7 @@ function render() {
 
 // Apply filters and sort
 function applyFiltersAndSort() {
-  render();
+  render(true);
 }
 
 // Build filters UI
@@ -248,7 +278,7 @@ function buildFilters() {
   // Build category filters
   const catFilter = document.getElementById('catFilter');
   if (catFilter) {
-    const categories = getCategories();
+    const categories = getShopCategories();
     categories.forEach(cat => {
       catFilter.appendChild(createFilterElement('cat', cat.id, cat.name, cat.image));
     });
@@ -359,7 +389,17 @@ function setRatingFilter(rating) {
 }
 
 function setSearchFilter(searchTerm) {
-  shopState.filters.search = searchTerm;
+  const query = String(searchTerm || '').trim();
+  shopState.filters.search = query;
+  const url = new URL(window.location.href);
+  if (query) url.searchParams.set('q', query);
+  else url.searchParams.delete('q');
+  history.replaceState(null, '', url);
+
+  const searchInput = document.getElementById('searchInput');
+  const searchInputMobile = document.getElementById('searchInputMobile');
+  if (searchInput && searchInput.value !== query) searchInput.value = query;
+  if (searchInputMobile && searchInputMobile.value !== query) searchInputMobile.value = query;
   applyFiltersAndSort();
 }
 
@@ -441,6 +481,13 @@ function resetFilters() {
   // Sync the in-stock checkbox with the reset state
   const inStockOnly = document.getElementById('inStockOnly');
   if (inStockOnly) inStockOnly.checked = false;
+  const url = new URL(window.location.href);
+  url.searchParams.delete('q');
+  history.replaceState(null, '', url);
+  const searchInput = document.getElementById('searchInput');
+  const searchInputMobile = document.getElementById('searchInputMobile');
+  if (searchInput) searchInput.value = '';
+  if (searchInputMobile) searchInputMobile.value = '';
   applyFiltersAndSort();
 }
 
@@ -466,6 +513,13 @@ async function init() {
     return;
   }
   
+  const initialSearch = new URLSearchParams(window.location.search).get('q') || '';
+  shopState.filters.search = initialSearch;
+  const searchInput = document.getElementById('searchInput');
+  const searchInputMobile = document.getElementById('searchInputMobile');
+  if (searchInput) searchInput.value = initialSearch;
+  if (searchInputMobile) searchInputMobile.value = initialSearch;
+
   isLoading = true;
   shopGrid.innerHTML = `
     <div class="loading-placeholder">

@@ -5,6 +5,8 @@
 (function () {
   'use strict';
   const DB = window.LUXORA_DB, CUR = window.LUXORA_CURRENCY;
+  const API_BASE = 'http://localhost:3000/api';
+  const AUTH_API = API_BASE + '/auth';
 
   // ---------- Image resolver (admin pages live in /admin) ----------
   function IMG(src) {
@@ -15,16 +17,88 @@
   }
   window.LUXORA_IMG = IMG;
 
-  const ADMIN_USER = 'admin';
-  const ADMIN_PASS = 'luxora2026';
+  function getSessionToken() {
+    return localStorage.getItem(DB.STORAGE_KEYS.session);
+  }
+
+  function setSessionToken(token) {
+    if (token) localStorage.setItem(DB.STORAGE_KEYS.session, token);
+    else localStorage.removeItem(DB.STORAGE_KEYS.session);
+  }
+
+  async function authRequest(path, options) {
+    const response = await fetch(AUTH_API + path, Object.assign({
+      headers: { 'Content-Type': 'application/json' }
+    }, options || {}));
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Authentication request failed');
+    }
+
+    return result;
+  }
+
+  async function apiRequest(path, options) {
+    const token = getSessionToken();
+    const requestOptions = Object.assign({}, options || {});
+    const headers = Object.assign({ 'Content-Type': 'application/json' }, requestOptions.headers || {});
+
+    if (token && !headers.Authorization) {
+      headers.Authorization = 'Bearer ' + token;
+    }
+
+    const response = await fetch(API_BASE + path, Object.assign({}, requestOptions, { headers }));
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result.message || 'API request failed');
+    }
+
+    return result;
+  }
 
   // ---------- Auth ----------
-  function isLoggedIn() { return localStorage.getItem(DB.STORAGE_KEYS.session) === '1'; }
-  function login(u, p) {
-    if (u === ADMIN_USER && p === ADMIN_PASS) { localStorage.setItem(DB.STORAGE_KEYS.session, '1'); return true; }
-    return false;
+  function isLoggedIn() { return !!getSessionToken(); }
+  async function login(u, p) {
+    const email = String(u || '').trim();
+    const password = String(p || '');
+
+    if (!email || !password) {
+      return false;
+    }
+
+    const result = await authRequest('/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+
+    const token = result && result.data && result.data.token;
+    if (!token) {
+      throw new Error('Login succeeded but no session token was returned');
+    }
+
+    setSessionToken(token);
+    return true;
   }
-  function logout() { localStorage.removeItem(DB.STORAGE_KEYS.session); location.href = 'login.html'; }
+  async function logout() {
+    const token = getSessionToken();
+
+    try {
+      if (token) {
+        await authRequest('/logout', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token }
+        });
+      }
+    } catch (_) {
+      // Always clear the local session even if the backend logout call fails.
+    }
+
+    setSessionToken(null);
+    location.href = 'login.html';
+  }
   function requireAuth() {
     if (!isLoggedIn()) location.href = 'login.html';
   }
@@ -192,6 +266,7 @@
 
   window.LUXORA_ADMIN = {
     isLoggedIn, login, logout, requireAuth, toast, renderShell, NAV,
-    lineChart, barChart, donutChart, confirmDialog, showLoading, hideLoading, IMG
+    lineChart, barChart, donutChart, confirmDialog, showLoading, hideLoading, IMG,
+    apiRequest, getSessionToken
   };
 })();

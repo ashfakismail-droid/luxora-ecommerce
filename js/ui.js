@@ -12,11 +12,20 @@
   // ---------- Image resolver ----------
   // Product images in the DB are stored as bare filenames (e.g. "shoes-0.jpg").
   // Resolve them to the real path under images/products/. If a full path or
-  // external URL is passed through, it is returned unchanged.
-  function IMG(src) {
+  // external URL is passed through, it is returned unchanged. When the backend
+  // sends a filename that does not match the local category naming convention,
+  // fall back to the first image for that category so product thumbnails do not
+  // break after migration.
+  function IMG(src, category) {
     if (!src) return 'images/products/shoes-0.jpg';
     if (/^([a-z]+:\/\/|\/|data:|\.\.\/)/i.test(src)) return src;
     if (src.indexOf('/') !== -1) return src;
+    if (category) {
+      const cat = String(category).trim().toLowerCase();
+      if (cat && !src.toLowerCase().startsWith(cat + '-')) {
+        return 'images/products/' + cat + '-0.jpg';
+      }
+    }
     return 'images/products/' + src;
   }
   window.LUXORA_IMG = IMG;
@@ -44,8 +53,84 @@
   }
 
   // ---------- Cart ----------
+  const API_BASE = 'http://localhost:3000/api';
+  let productCatalogPromise;
   function getCart() { return DB.getCart(); }
   function setCart(c) { DB.setCart(c); updateHeaderCounts(); document.dispatchEvent(new CustomEvent('luxora:cart')); }
+  function guestUserId() {
+    let id = localStorage.getItem('luxora_guest_user_id');
+    if (!id) {
+      id = 'guest-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem('luxora_guest_user_id', id);
+    }
+    return id;
+  }
+  async function apiRequest(path, options = {}) {
+    const response = await fetch(API_BASE + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || 'API request failed');
+    return result.data;
+  }
+  function normalizeApiProduct(product) {
+    return {
+      ...product,
+      id: String(product.id),
+      salePrice: parseFloat(product.compare_at_price) > 0 ? parseFloat(product.compare_at_price) : 0,
+      reviews: parseInt(product.reviews_count, 10) || 0,
+      price: parseFloat(product.price) || 0,
+      rating: parseFloat(product.rating) || 0,
+      stock: parseInt(product.stock, 10) || 0,
+      images: Array.isArray(product.images) ? product.images : (product.image ? [product.image] : []),
+      status: product.is_active === false ? 'inactive' : 'active'
+    };
+  }
+  function syncProductCatalog() {
+    if (!productCatalogPromise) {
+      productCatalogPromise = apiRequest('/products')
+        .then(data => {
+          if (Array.isArray(data)) DB.setProducts(data.map(normalizeApiProduct));
+        })
+        .catch(() => {});
+    }
+    return productCatalogPromise;
+  }
+  async function syncCart() {
+    try {
+      const data = await apiRequest('/cart?userId=' + encodeURIComponent(guestUserId()));
+      if (!Array.isArray(data.items)) return;
+      const localCart = getCart();
+      const remoteItems = data.items.map(item => {
+        const productId = String(item.productId);
+        const local = localCart.find(entry => entry.key === item.key);
+        return {
+          key: item.key,
+          productId,
+          qty: item.qty,
+          variant: item.variant || local?.variant || null
+        };
+      });
+      const remoteKeys = new Set(remoteItems.map(item => item.key));
+      const localOnlyItems = localCart.filter(item => /^\d+$/.test(String(item.productId)) && !remoteKeys.has(item.key));
+
+      await Promise.all(localOnlyItems.map(item => apiRequest('/cart', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: guestUserId(),
+          key: item.key,
+          productId: item.productId,
+          qty: item.qty,
+          variant: item.variant || null
+        })
+      })));
+
+      setCart([...remoteItems, ...localOnlyItems]);
+    } catch (_) {
+      // Local cache remains usable while the API or migration is unavailable.
+    }
+  }
   // Count is ALWAYS derived from the real cart array, and only items whose
   // product still exists are counted. No separate badge counter is ever stored.
   function cartCount() {
@@ -59,12 +144,24 @@
     if (existing) existing.qty += qty;
     else cart.push({ key, productId, qty, variant: variant || null });
     setCart(cart);
+    apiRequest('/cart', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: guestUserId(),
+        key,
+        productId,
+        qty: cart.find(item => item.key === key).qty,
+        variant: variant || null
+      })
+    }).catch(() => {});
     toast('Product added to cart', 'success');
     renderCartButtons();
   }
   function removeFromCart(key) {
     setCart(getCart().filter(i => i.key !== key));
-    document.dispatchEvent(new CustomEvent('luxora:cart'));
+    apiRequest('/cart/' + encodeURIComponent(key) + '?userId=' + encodeURIComponent(guestUserId()), {
+      method: 'DELETE'
+    }).catch(() => {});
     renderCartButtons();
   }
   function updateQty(key, qty) {
@@ -73,6 +170,10 @@
     if (item) {
       item.qty = Math.max(1, qty);
       setCart(cart);
+      apiRequest('/cart/' + encodeURIComponent(item.key) + '?userId=' + encodeURIComponent(guestUserId()), {
+        method: 'PUT',
+        body: JSON.stringify({ qty: item.qty })
+      }).catch(() => {});
     }
   }
   function updateCartCount() {
@@ -87,10 +188,41 @@
   function getWishlist() { return DB.getWishlist(); }
   function setWishlist(w) { DB.setWishlist(w); updateHeaderCounts(); document.dispatchEvent(new CustomEvent('luxora:wishlist')); }
   function inWishlist(id) { return getWishlist().includes(id); }
+  function wishlistUserId() {
+    return guestUserId();
+  }
+  async function wishlistRequest(endpoint = '', options = {}) {
+    return apiRequest('/wishlist' + endpoint, options);
+  }
+  async function syncWishlist() {
+    try {
+      const data = await wishlistRequest('?userId=' + encodeURIComponent(wishlistUserId()));
+      if (!Array.isArray(data.items)) return;
+
+      const remoteItems = data.items.map(String);
+      const remoteIds = new Set(remoteItems);
+      const localOnlyItems = getWishlist().filter(id => /^\d+$/.test(String(id)) && !remoteIds.has(String(id))).map(String);
+
+      await Promise.all(localOnlyItems.map(productId => wishlistRequest('', {
+        method: 'POST',
+        body: JSON.stringify({ productId, userId: wishlistUserId() })
+      })));
+
+      const items = [...remoteItems, ...localOnlyItems];
+      if (JSON.stringify(items) !== JSON.stringify(getWishlist())) setWishlist(items);
+    } catch (_) {
+      // Keep existing local wishlist behavior when the API is unavailable.
+    }
+  }
   function toggleWishlist(id) {
     const w = getWishlist();
-    if (w.includes(id)) { setWishlist(w.filter(x => x !== id)); toast('Removed from Wishlist', 'info'); }
+    const removing = w.includes(id);
+    if (removing) { setWishlist(w.filter(x => x !== id)); toast('Removed from Wishlist', 'info'); }
     else { w.push(id); setWishlist(w); toast('Added to Wishlist', 'success'); }
+    wishlistRequest(removing ? '/' + encodeURIComponent(id) + '?userId=' + encodeURIComponent(wishlistUserId()) : '', removing ? { method: 'DELETE' } : {
+      method: 'POST',
+      body: JSON.stringify({ productId: id, userId: wishlistUserId() })
+    }).catch(() => syncWishlist());
     document.dispatchEvent(new CustomEvent('luxora:wishlist'));
   }
   // Count is ALWAYS derived from the real wishlist array, filtered to ids that
@@ -288,7 +420,7 @@
       <article class="product-card glass" data-id="${p.id}">
         <a href="product.html?id=${p.id}" class="card-media">
           ${badge}${stockBadge}
-          <img src="${IMG(p.image)}" alt="${p.name}" loading="lazy">
+          <img src="${IMG(p.image, p.category)}" alt="${p.name}" loading="lazy">
           <button class="wish-btn ${wished}" data-wish="${p.id}" aria-label="Wishlist" type="button">&#9825;</button>
           <button class="quick-view-btn" data-quick="${p.id}" type="button" aria-label="Quick view">⤢</button>
           <button class="compare-btn" data-compare="${p.id}" type="button" aria-label="Compare">⇄</button>
@@ -380,7 +512,7 @@
       <div class="modal quick-view-modal glass">
         <button class="modal-close" data-qv-close aria-label="Close">✕</button>
         <div class="qv-grid">
-          <div class="qv-media"><img src="${IMG(p.image)}" alt="${p.name}"></div>
+          <div class="qv-media"><img src="${IMG(p.image, p.category)}" alt="${p.name}"></div>
           <div class="qv-info">
             <div class="qv-brand">${p.brand}</div>
             <h3>${p.name}</h3>
@@ -439,7 +571,7 @@
     if (!items.length) { bar.classList.remove('open'); bar.innerHTML = ''; return; }
     bar.innerHTML = `
       <div class="cb-inner">
-        <div class="cb-items">${items.map(p => `<div class="cb-item"><img src="${IMG(p.image)}" alt="${p.name}"><button data-cb-remove="${p.id}" aria-label="Remove">✕</button></div>`).join('')}</div>
+        <div class="cb-items">${items.map(p => `<div class="cb-item"><img src="${IMG(p.image, p.category)}" alt="${p.name}"><button data-cb-remove="${p.id}" aria-label="Remove">✕</button></div>`).join('')}</div>
         <div class="cb-actions">
           <button class="btn btn-outline btn-sm" data-cb-clear>Clear</button>
           <button class="btn btn-gold btn-sm" data-cb-go>Compare (${items.length})</button>
@@ -468,12 +600,20 @@
 
   window.LUXORA_UI = {
     init, toast, addToCart, removeFromCart, updateQty, getCart, cartCount,
-    toggleWishlist, inWishlist, getWishlist, productCard, stars, refreshPrices,
+    syncProductCatalog, syncCart, toggleWishlist, inWishlist, getWishlist, syncWishlist, productCard, stars, refreshPrices,
     buildCurrencyOptions, updateCartCount, updateWishlistCount, updateHeaderCounts, renderWishButtons,
     openQuickView, closeQuickView, toggleCompare, renderCompareBar, isInCart, IMG
   };
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else { init(); }
+    document.addEventListener('DOMContentLoaded', async () => {
+      init();
+      await syncProductCatalog();
+      await Promise.all([syncCart(), syncWishlist()]);
+      updateHeaderCounts();
+    });
+  } else {
+    init();
+    syncProductCatalog().then(() => Promise.all([syncCart(), syncWishlist()])).then(updateHeaderCounts);
+  }
 })();

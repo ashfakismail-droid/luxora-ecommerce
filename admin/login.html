@@ -31,12 +31,29 @@
   <script src="js/admin.js"></script>
   <script>
     if (window.LUXORA_ADMIN && window.LUXORA_ADMIN.isLoggedIn()) location.href = 'dashboard.html';
-    document.getElementById('loginForm').addEventListener('submit', function (e) {
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
       e.preventDefault();
+      var submitBtn = this.querySelector('button[type="submit"]');
+      var originalText = submitBtn.textContent;
       var u = this.elements['user'].value.trim();
       var p = this.elements['pass'].value;
-      if (window.LUXORA_ADMIN.login(u, p)) location.href = 'dashboard.html';
-      else { this.querySelector('.field:last-child').classList.add('invalid'); window.LUXORA_ADMIN.toast('Invalid username or password', 'error'); }
+      this.querySelector('.field:last-child').classList.remove('invalid');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing In...';
+      try {
+        var ok = await window.LUXORA_ADMIN.login(u, p);
+        if (ok) location.href = 'dashboard.html';
+        else {
+          this.querySelector('.field:last-child').classList.add('invalid');
+          window.LUXORA_ADMIN.toast('Invalid username or password', 'error');
+        }
+      } catch (err) {
+        this.querySelector('.field:last-child').classList.add('invalid');
+        window.LUXORA_ADMIN.toast(err && err.message ? err.message : 'Invalid username or password', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
     });
   </script>
 </body>

@@ -18,7 +18,7 @@
     }
 
     const rows = [
-      { label: 'Image', get: p => `<img src="${UI.IMG(p.image)}" alt="${p.name}">` },
+      { label: 'Image', get: p => `<img src="${UI.IMG(p.image, p.category)}" alt="${p.name}">` },
       { label: 'Brand', get: p => p.brand },
       { label: 'Price', get: p => { const price = (p.salePrice && p.salePrice > 0) ? p.salePrice : p.price; return `<span data-price="${price}">${CUR.format(price)}</span>${p.salePrice ? ` <span class="card-old">${CUR.format(p.price)}</span>` : ''}`; } },
       { label: 'Rating', get: p => UI.stars(p.rating) + ` <span>(${p.reviews})</span>` },

@@ -1,13 +1,39 @@
 /* LUXORA - Admin Inventory */
 (function () {
   'use strict';
-  const DB = window.LUXORA_DB, ADMIN = window.LUXORA_ADMIN;
+  const ADMIN = window.LUXORA_ADMIN;
   ADMIN.requireAuth();
   ADMIN.renderShell();
   const root = document.getElementById('adminContent');
+  let products = [];
+
+  function apiData(result) { return result && result.data ? result.data : []; }
+  function normalizeProduct(p) {
+    return {
+      id: String(p.id),
+      name: p.name || '',
+      category: p.category || '',
+      stock: Number(p.stock || 0),
+      is_active: p.is_active !== false,
+      raw: p
+    };
+  }
+
+  async function loadData() {
+    ADMIN.showLoading(root);
+    try {
+      const result = await ADMIN.apiRequest('/products');
+      products = apiData(result).map(normalizeProduct);
+      render();
+    } catch (err) {
+      root.innerHTML = `<div class="panel empty-state">${err.message || 'Failed to load inventory.'}</div>`;
+      ADMIN.toast(err.message || 'Failed to load inventory.', 'error');
+    } finally {
+      ADMIN.hideLoading(root);
+    }
+  }
 
   function render() {
-    const products = DB.getProducts();
     const low = products.filter(p => p.stock <= 20).length;
     const out = products.filter(p => p.stock === 0).length;
     root.innerHTML = `
@@ -65,7 +91,7 @@
   function filter() {
     const q = document.getElementById('search').value.toLowerCase();
     const f = document.getElementById('filter').value;
-    let list = DB.getProducts();
+    let list = products.slice();
     if (q) list = list.filter(p => p.name.toLowerCase().includes(q));
     if (f === 'low') list = list.filter(p => p.stock > 0 && p.stock <= 20);
     if (f === 'out') list = list.filter(p => p.stock === 0);
@@ -73,15 +99,24 @@
   }
 
   function adjust(id, delta) {
-    const list = DB.getProducts();
-    const p = list.find(x => x.id === id);
-    if (p) { p.stock = Math.max(0, p.stock + delta); p.status = p.stock > 0 ? 'active' : 'out'; DB.setProducts(list); render(); }
+    const p = products.find(x => String(x.id) === String(id));
+    if (p) setStock(id, Math.max(0, p.stock + delta));
   }
-  function setStock(id, v) {
-    const list = DB.getProducts();
-    const p = list.find(x => x.id === id);
-    if (p) { p.stock = Math.max(0, v); p.status = p.stock > 0 ? 'active' : 'out'; DB.setProducts(list); ADMIN.toast('Stock updated', 'success'); render(); }
+  async function setStock(id, v) {
+    const stock = Math.max(0, v);
+    ADMIN.showLoading(root);
+    try {
+      await ADMIN.apiRequest('/products/' + encodeURIComponent(id), {
+        method: 'PUT',
+        body: JSON.stringify({ stock, is_active: stock > 0, updated_at: new Date().toISOString() })
+      });
+      ADMIN.toast('Stock updated', 'success');
+      await loadData();
+    } catch (err) {
+      ADMIN.hideLoading(root);
+      ADMIN.toast(err.message || 'Failed to update stock', 'error');
+    }
   }
 
-  render();
+  loadData();
 })();

@@ -1,20 +1,61 @@
 /* LUXORA - Orders page (history, status, invoice) */
 (function () {
   'use strict';
-  const DB = window.LUXORA_DB, UI = window.LUXORA_UI, CUR = window.LUXORA_CURRENCY;
+  const DB = window.LUXORA_DB, UI = window.LUXORA_UI, CUR = window.LUXORA_CURRENCY, ORDERS = window.LUXORA_ORDER_API;
 
   function statusPill(s) {
     const map = { pending: 'Pending', processing: 'Processing', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled' };
     return `<span class="status-pill status-${s}">${map[s] || s}</span>`;
   }
 
-  function render() {
+  function normalizeOrder(o) {
+    const items = o.items || o.order_items || [];
+    return {
+      ...o,
+      id: o.id || o.order_id,
+      date: o.date || (o.created_at ? new Date(o.created_at).toISOString().slice(0, 10) : ''),
+      status: o.status || 'pending',
+      payment: o.payment || o.payment_method || '',
+      shipping: o.shipping || o.shipping_address || {},
+      billing: o.billing || o.billing_address || {},
+      items: items.map(i => ({
+        productId: i.productId || i.product_id,
+        name: i.name || i.product_name,
+        image: i.image || i.product_image,
+        qty: i.qty || i.quantity || 1,
+        unit: i.unit || i.unit_price || 0,
+        variant: i.variant || {}
+      })),
+      subtotal: Number(o.subtotal || 0),
+      discount: Number(o.discount || 0),
+      tax: Number(o.tax || 0),
+      shippingCost: Number(o.shippingCost || o.shipping_cost || 0),
+      total: Number(o.total || 0)
+    };
+  }
+
+  async function render() {
     const root = document.getElementById('ordersRoot');
     const params = new URLSearchParams(location.search);
     const successId = params.get('order');
     const success = params.get('success');
 
-    let orders = DB.getOrders();
+    root.innerHTML = `<div class="glass" style="padding:24px"><p class="muted">Loading orders...</p></div>`;
+
+    if (!ORDERS || typeof ORDERS.listOrders !== 'function') {
+      root.innerHTML = `<div class="empty-state glass"><div class="ico">⚠️</div><h3>Orders unavailable</h3><p class="muted">Unable to load the orders API. Please refresh and try again.</p></div>`;
+      return;
+    }
+
+    let orders;
+    try {
+      orders = (await ORDERS.listOrders()).map(normalizeOrder);
+    } catch (err) {
+      root.innerHTML = `<div class="empty-state glass"><div class="ico">⚠️</div><h3>Unable to load orders</h3><p class="muted">${err.message || 'Please try again later.'}</p><button class="btn btn-gold" id="retryOrders">Retry</button></div>`;
+      document.getElementById('retryOrders').addEventListener('click', render);
+      return;
+    }
+
     if (!orders.length) {
       root.innerHTML = `<div class="empty-state glass"><div class="ico">📦</div><h3>No orders yet</h3><p class="muted">When you place an order it will appear here.</p><a href="shop.html" class="btn btn-gold">Start Shopping</a></div>`;
       return;
@@ -52,7 +93,7 @@
     document.querySelectorAll('[data-invoice]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.invoice;
       const box = document.getElementById('inv-' + id);
-      if (box.style.display === 'none') { box.innerHTML = invoiceHTML(DB.getOrders().find(o => o.id === id)); box.style.display = 'block'; b.textContent = 'Hide Invoice'; }
+      if (box.style.display === 'none') { box.innerHTML = invoiceHTML(orders.find(o => o.id === id)); box.style.display = 'block'; b.textContent = 'Hide Invoice'; UI.refreshPrices(); }
       else { box.style.display = 'none'; b.textContent = 'View Invoice'; }
     }));
   }
@@ -73,7 +114,7 @@
         <div>Subtotal: <span data-price="${o.subtotal}">${CUR.format(o.subtotal)}</span></div>
         ${o.discount > 0 ? `<div style="color:var(--success)">Discount: -<span data-price-raw="${o.discount}">${CUR.formatRaw(o.discount)}</span></div>` : ''}
         <div>Tax: <span data-price="${o.tax}">${CUR.format(o.tax)}</span></div>
-        <div>Shipping: ${o.shipping === 0 ? 'Free' : `<span data-price="${o.shipping}">${CUR.format(o.shipping)}</span>`}</div>
+        <div>Shipping: ${o.shippingCost === 0 ? 'Free' : `<span data-price="${o.shippingCost}">${CUR.format(o.shippingCost)}</span>`}</div>
         <div style="font-size:18px;color:var(--text);font-weight:600;margin-top:6px">Total: <span data-price="${o.total}">${CUR.format(o.total)}</span></div>
       </div>
       <div class="muted" style="font-size:13px;margin-top:14px">Ship to: ${o.shipping.address}, ${o.shipping.city} ${o.shipping.zip}, ${o.shipping.country}</div>

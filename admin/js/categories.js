@@ -1,14 +1,43 @@
 /* LUXORA - Admin Categories */
 (function () {
   'use strict';
-  const DB = window.LUXORA_DB, ADMIN = window.LUXORA_ADMIN;
+  const ADMIN = window.LUXORA_ADMIN;
   ADMIN.requireAuth();
   ADMIN.renderShell();
   const root = document.getElementById('adminContent');
+  let categories = [];
+  let products = [];
+
+  function apiData(result) { return result && result.data ? result.data : []; }
+  function normalizeCategory(c) {
+    return {
+      id: c.slug || String(c.id),
+      name: c.name || c.slug || String(c.id),
+      image: c.image || '../images/categories/footwear.svg',
+      description: c.description || ''
+    };
+  }
+  function normalizeProduct(p) { return { category: p.category || '' }; }
+
+  async function loadData() {
+    ADMIN.showLoading(root);
+    try {
+      const [categoryResult, productResult] = await Promise.all([
+        ADMIN.apiRequest('/categories'),
+        ADMIN.apiRequest('/products')
+      ]);
+      categories = apiData(categoryResult).map(normalizeCategory);
+      products = apiData(productResult).map(normalizeProduct);
+      render();
+    } catch (err) {
+      root.innerHTML = `<div class="panel empty-state">${err.message || 'Failed to load categories.'}</div>`;
+      ADMIN.toast(err.message || 'Failed to load categories.', 'error');
+    } finally {
+      ADMIN.hideLoading(root);
+    }
+  }
 
   function render() {
-    const cats = DB.getCategories();
-    const products = DB.getProducts();
     root.innerHTML = `
       <div class="toolbar">
         <div class="search"><input type="text" id="search" placeholder="Search categories…"></div>
@@ -22,18 +51,18 @@
           </table>
         </div>
       </div>`;
-    drawRows(cats, products);
+    drawRows(categories, products);
     document.getElementById('addBtn').addEventListener('click', () => openModal(null));
     document.getElementById('cancelCat').addEventListener('click', () => document.getElementById('catModal').classList.remove('open'));
     document.getElementById('search').addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase();
-      drawRows(DB.getCategories().filter(c => c.name.toLowerCase().includes(q)), DB.getProducts());
+      drawRows(categories.filter(c => c.name.toLowerCase().includes(q)), products);
     });
     document.getElementById('catForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const f = e.target;
       if (!f.elements['name'].value.trim()) { f.elements['name'].closest('.field').classList.add('invalid'); return; }
-      save(f, products);
+      save(f);
     });
   }
 
@@ -44,7 +73,7 @@
       <tr>
         <td><img class="thumb" src="${c.image}" alt="${c.name}" onerror="this.src='../images/categories/footwear.svg'"></td>
         <td class="cell-name">${c.name}</td>
-        <td>${products.filter(p => p.category === c.id).length}</td>
+        <td>${products.filter(p => p.category === c.name || p.category === c.id).length}</td>
         <td class="cell-sub">${c.description || ''}</td>
         <td><button class="btn btn-outline btn-sm" data-edit="${c.id}">Edit</button>
             <button class="btn btn-danger btn-sm" data-del="${c.id}">Delete</button></td>
@@ -57,7 +86,8 @@
     const f = document.getElementById('catForm');
     f.reset();
     if (id) {
-      const c = DB.getCategories().find(x => x.id === id);
+      const c = categories.find(x => String(x.id) === String(id));
+      if (!c) { ADMIN.toast('Category not found', 'error'); return; }
       document.getElementById('catModalTitle').textContent = 'Edit Category';
       f.elements['id'].value = c.id;
       f.elements['name'].value = c.name;
@@ -67,23 +97,14 @@
     document.getElementById('catModal').classList.add('open');
   }
 
-  function save(f, products) {
-    const cats = DB.getCategories();
-    const id = f.elements['id'].value;
-    const name = f.elements['name'].value.trim();
-    const slug = id || name.toLowerCase().replace(/[^a-z0-9]+/g, '');
-    const data = { id: slug, name, image: f.elements['image'].value || 'images/categories/footwear.svg', description: f.elements['description'].value.trim() };
-    if (id) { const i = cats.findIndex(c => c.id === id); cats[i] = data; ADMIN.toast('Category updated', 'success'); }
-    else { cats.push(data); ADMIN.toast('Category added', 'success'); }
-    DB.setCategories(cats);
-    document.getElementById('catModal').classList.remove('open');
-    render();
+  function save() {
+    ADMIN.toast('Category create/update API is not available yet.', 'error');
   }
 
   function del(id) {
     ADMIN.confirmDialog({ title: 'Delete Category', message: 'Delete this category permanently?', confirmText: 'Delete', danger: true })
-      .then(ok => { if (!ok) return; DB.setCategories(DB.getCategories().filter(c => c.id !== id)); ADMIN.toast('Category deleted', 'success'); render(); });
+      .then(ok => { if (!ok) return; ADMIN.toast('Category delete API is not available yet.', 'error'); });
   }
 
-  render();
+  loadData();
 })();

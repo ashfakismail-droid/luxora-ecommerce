@@ -1,7 +1,7 @@
 /* LUXORA - Checkout page */
 (function () {
   'use strict';
-  const DB = window.LUXORA_DB, UI = window.LUXORA_UI, CUR = window.LUXORA_CURRENCY, STORE = window.LUXORA_STORE;
+  const DB = window.LUXORA_DB, UI = window.LUXORA_UI, CUR = window.LUXORA_CURRENCY, STORE = window.LUXORA_STORE, ORDERS = window.LUXORA_ORDER_API;
   let appliedCoupon = sessionStorage.getItem('luxora_coupon') || '';
 
   function renderSummary() {
@@ -62,10 +62,18 @@
     return ok;
   }
 
-  function submit() {
+  function setSubmitting(isSubmitting) {
+    const btn = document.getElementById('placeOrder');
+    if (!btn) return;
+    btn.disabled = isSubmitting;
+    btn.textContent = isSubmitting ? 'Placing Order...' : 'Place Order';
+  }
+
+  async function submit() {
     const form = document.getElementById('checkoutForm');
     const cart = DB.getCart();
     if (!cart.length) { UI.toast('Your cart is empty.', 'error'); return; }
+    if (!ORDERS || typeof ORDERS.createOrder !== 'function') { UI.toast('Orders API is unavailable. Please try again later.', 'error'); return; }
     const t = STORE.computeTotals(cart, appliedCoupon);
     const pay = form.elements['pay'].value;
     const same = document.getElementById('sameAsShip').checked;
@@ -86,16 +94,25 @@
       zip: form.elements['b_zip'].value.trim(),
       country: form.elements['b_country'].value.trim()
     };
-    const order = STORE.createOrder({
+    const orderPayload = {
       customer, shipping, billing, payment: pay,
       items: t.items.map(i => ({ productId: i.productId, name: i.product.name, image: i.product.image, qty: i.qty, unit: i.unit, variant: i.variant })),
-      subtotal: t.subtotal, discount: t.discount, coupon: appliedCoupon, tax: t.tax, shipping: t.shipping, total: t.total,
+      subtotal: t.subtotal, discount: t.discount, coupon: appliedCoupon, tax: t.tax, shippingCost: t.shipping, total: t.total,
       currency: CUR.getCode()
-    });
-    DB.setCart([]);
-    sessionStorage.removeItem('luxora_coupon');
-    UI.updateCartCount();
-    location.href = 'orders.html?order=' + order.id + '&success=1';
+    };
+
+    try {
+      setSubmitting(true);
+      const order = await ORDERS.createOrder(orderPayload);
+      if (!order || !order.id) throw new Error('Order was created but no order ID was returned.');
+      DB.setCart([]);
+      sessionStorage.removeItem('luxora_coupon');
+      UI.updateCartCount();
+      location.href = 'orders.html?order=' + encodeURIComponent(order.id) + '&success=1';
+    } catch (err) {
+      UI.toast(err.message || 'Failed to place order. Please try again.', 'error');
+      setSubmitting(false);
+    }
   }
 
   function init() {

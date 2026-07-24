@@ -4,19 +4,78 @@
   const DB = window.LUXORA_DB, UI = window.LUXORA_UI, CUR = window.LUXORA_CURRENCY;
 
   const selected = { color: null, size: null, qty: 1, img: 0 };
+  let currentProduct = null;
 
-  function getProduct() {
-    const id = new URLSearchParams(location.search).get('id');
-    return DB.getProduct(id);
+  // Map backend product fields to the UI shape expected by this page.
+  // The backend (Supabase) stores compare_at_price/reviews_count/is_active,
+  // while the UI expects salePrice/reviews/status. Colors, sizes and specs
+  // are not stored on the backend; safe defaults keep the UI functional.
+  function normalizeProduct(bp) {
+    if (!bp) return null;
+    return {
+      id: String(bp.id),
+      name: bp.name || '',
+      slug: bp.slug || '',
+      description: bp.description || '',
+      price: parseFloat(bp.price) || 0,
+      salePrice: parseFloat(bp.compare_at_price) > 0 ? parseFloat(bp.compare_at_price) : 0,
+      category: bp.category || '',
+      reviews: parseInt(bp.reviews_count) || 0,
+      rating: parseFloat(bp.rating) || 0,
+      brand: bp.brand || '',
+      image: bp.image || '',
+      images: Array.isArray(bp.images) && bp.images.length ? bp.images : (bp.image ? [bp.image] : []),
+      stock: parseInt(bp.stock) || 0,
+      // UI expects colors/sizes/specs — backend doesn't provide; use safe defaults
+      colors: Array.isArray(bp.colors) && bp.colors.length ? bp.colors : ['Default'],
+      sizes: Array.isArray(bp.sizes) && bp.sizes.length ? bp.sizes : ['One Size'],
+      specs: (bp.specs && typeof bp.specs === 'object') ? bp.specs : {}
+    };
+  }
+
+  function getProductId() {
+    return new URLSearchParams(location.search).get('id');
+  }
+
+  // ---- States ----
+  function renderLoading() {
+    const root = document.getElementById('pdpRoot');
+    root.innerHTML = `<div class="empty-state"><div class="ico">⏳</div><h3>Loading…</h3></div>`;
+  }
+
+  function renderNotFound() {
+    const root = document.getElementById('pdpRoot');
+    root.innerHTML = `<div class="empty-state"><div class="ico">🚫</div><h3>Product not found</h3><p class="muted">It may have been removed.</p><a href="shop.html" class="btn btn-gold">Back to Shop</a></div>`;
+  }
+
+  function renderError(err) {
+    const root = document.getElementById('pdpRoot');
+    const msg = (err && err.message) ? err.message : 'Failed to load product.';
+    root.innerHTML = `<div class="empty-state"><div class="ico">⚠</div><h3>Something went wrong</h3><p class="muted">${msg}</p><button class="btn btn-outline" id="retryBtn" type="button">Retry</button></div>`;
+    const retry = document.getElementById('retryBtn');
+    if (retry) retry.addEventListener('click', loadProduct);
+  }
+
+  // ---- Load product from backend API ----
+  async function loadProduct() {
+    const id = getProductId();
+    if (!id) { renderNotFound(); return; }
+    renderLoading();
+    try {
+      const response = await ProductAPI.getById(id);
+      currentProduct = normalizeProduct(response.data);
+      if (!currentProduct) { renderNotFound(); return; }
+      render();
+    } catch (err) {
+      console.error('Error loading product:', err);
+      renderError(err);
+    }
   }
 
   function render() {
-    const p = getProduct();
+    const p = currentProduct;
     const root = document.getElementById('pdpRoot');
-    if (!p) {
-      root.innerHTML = `<div class="empty-state"><div class="ico">🚫</div><h3>Product not found</h3><p class="muted">It may have been removed.</p><a href="shop.html" class="btn btn-gold">Back to Shop</a></div>`;
-      return;
-    }
+    if (!p) { renderNotFound(); return; }
     document.title = p.name + ' — LUXORA';
     selected.color = p.colors[0];
     selected.size = p.sizes[0];
@@ -28,9 +87,9 @@
       <div class="breadcrumb"><a href="index.html">Home</a> / <a href="shop.html?cat=${p.category}">${p.category}</a> / ${p.name}</div>
       <div class="pdp">
         <div class="pdp-gallery">
-          <div class="main-img" id="mainImgWrap"><img id="mainImg" src="${UI.IMG(p.images[0])}" alt="${p.name}"></div>
+          <div class="main-img" id="mainImgWrap"><img id="mainImg" src="${UI.IMG(p.images[0], p.category)}" alt="${p.name}"></div>
           <div class="thumbs" id="thumbs">
-            ${p.images.map((img, i) => `<img src="${UI.IMG(img)}" class="${i === 0 ? 'active' : ''}" data-i="${i}" alt="${p.name} view ${i + 1}">`).join('')}
+            ${p.images.map((img, i) => `<img src="${UI.IMG(img, p.category)}" class="${i === 0 ? 'active' : ''}" data-i="${i}" alt="${p.name} view ${i + 1}">`).join('')}
           </div>
         </div>
         <div class="pdp-info">
@@ -125,8 +184,8 @@
     btn.textContent = active ? '♥ In Wishlist' : '♡ Wishlist';
     btn.classList.toggle('btn-gold', active);
   }
-  document.addEventListener('luxora:cart', () => syncCartButton(getProduct() ? getProduct().id : null));
-  document.addEventListener('luxora:wishlist', () => syncWishButton(getProduct() ? getProduct().id : null));
+  document.addEventListener('luxora:cart', () => { if (currentProduct) syncCartButton(currentProduct.id); });
+  document.addEventListener('luxora:wishlist', () => { if (currentProduct) syncWishButton(currentProduct.id); });
 
   function bind(p) {
     // gallery
@@ -134,7 +193,7 @@
     document.getElementById('thumbs').addEventListener('click', (e) => {
       const t = e.target.closest('img'); if (!t) return;
       selected.img = +t.dataset.i;
-      mainImg.src = UI.IMG(p.images[selected.img]);
+      mainImg.src = UI.IMG(p.images[selected.img], p.category);
       document.querySelectorAll('#thumbs img').forEach(i => i.classList.toggle('active', i === t));
     });
     // zoom
@@ -203,13 +262,22 @@
   }
 
   function renderRelated(p) {
-    const related = DB.getProducts().filter(x => x.category === p.category && x.id !== p.id).slice(0, 4);
-    if (!related.length) related.push(...DB.getProducts().filter(x => x.id !== p.id).slice(0, 4));
-    document.getElementById('relatedGrid').innerHTML = related.map(x => UI.productCard(x)).join('');
-    UI.refreshPrices();
-    UI.renderWishButtons();
+    const grid = document.getElementById('relatedGrid');
+    if (!grid) return;
+    // Load related products from the backend API, then filter by category.
+    ProductAPI.getAll().then((response) => {
+      const all = (response.data || []).map(normalizeProduct).filter(Boolean);
+      let related = all.filter(x => x.category === p.category && x.id !== p.id).slice(0, 4);
+      if (!related.length) related = all.filter(x => x.id !== p.id).slice(0, 4);
+      grid.innerHTML = related.map(x => UI.productCard(x)).join('');
+      UI.refreshPrices();
+      UI.renderWishButtons();
+    }).catch((err) => {
+      console.error('Error loading related products:', err);
+      grid.innerHTML = `<p class="muted">Unable to load related products.</p>`;
+    });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
-  else render();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadProduct);
+  else loadProduct();
 })();
