@@ -22,12 +22,20 @@ const app = express();
 app.use(helmet());
 
 // CORS
+const allowedOrigins = [
+  "http://127.0.0.1:5501",
+  "http://localhost:5501",
+  "https://luxora-storee.netlify.app",
+  "https://e-commerce-me.netlify.app"
+];
+
 app.use(cors({
-  origin: [
-    "http://127.0.0.1:5501",
-    "http://localhost:5501",
-    "https://luxora-storee.netlify.app"
-  ],
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error("Not allowed by CORS"));
+  },
   credentials: true
 }));
 // Body parsing
