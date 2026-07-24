@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   const DB = window.LUXORA_DB, CUR = window.LUXORA_CURRENCY;
-  const API_BASE = 'http://localhost:3000/api';
+  const API_BASE = 'https://luxora-api-6v80.onrender.com/api';
   const AUTH_API = API_BASE + '/auth';
 
   // ---------- Image resolver (admin pages live in /admin) ----------
