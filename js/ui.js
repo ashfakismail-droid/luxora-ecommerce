@@ -53,7 +53,7 @@
   }
 
   // ---------- Cart ----------
-  const API_BASE = 'http://localhost:3000/api';
+  const API_BASE = 'https://luxora-api-6v80.onrender.com/api';
   let productCatalogPromise;
   function getCart() { return DB.getCart(); }
   function setCart(c) { DB.setCart(c); updateHeaderCounts(); document.dispatchEvent(new CustomEvent('luxora:cart')); }
