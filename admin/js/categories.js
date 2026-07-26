@@ -11,7 +11,8 @@
   function apiData(result) { return result && result.data ? result.data : []; }
   function normalizeCategory(c) {
     return {
-      id: c.slug || String(c.id),
+      id: c.id || c.slug,
+      slug: c.slug || String(c.id),
       name: c.name || c.slug || String(c.id),
       image: c.image || '../images/categories/footwear.svg',
       description: c.description || ''
@@ -61,7 +62,13 @@
     document.getElementById('catForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const f = e.target;
-      if (!f.elements['name'].value.trim()) { f.elements['name'].closest('.field').classList.add('invalid'); return; }
+      const name = f.elements['name'].value.trim();
+      if (!name) { 
+        f.elements['name'].closest('.field').classList.add('invalid'); 
+        ADMIN.toast('Category name is required', 'error');
+        return; 
+      }
+      f.elements['name'].closest('.field').classList.remove('invalid');
       save(f);
     });
   }
@@ -73,7 +80,7 @@
       <tr>
         <td><img class="thumb" src="${c.image}" alt="${c.name}" onerror="this.src='../images/categories/footwear.svg'"></td>
         <td class="cell-name">${c.name}</td>
-        <td>${products.filter(p => p.category === c.name || p.category === c.id).length}</td>
+        <td>${products.filter(p => p.category === c.name || p.category === c.id || p.category === c.slug).length}</td>
         <td class="cell-sub">${c.description || ''}</td>
         <td><button class="btn btn-outline btn-sm" data-edit="${c.id}">Edit</button>
             <button class="btn btn-danger btn-sm" data-del="${c.id}">Delete</button></td>
@@ -93,17 +100,66 @@
       f.elements['name'].value = c.name;
       f.elements['image'].value = c.image;
       f.elements['description'].value = c.description || '';
-    } else { document.getElementById('catModalTitle').textContent = 'Add Category'; f.elements['id'].value = ''; }
+    } else { 
+      document.getElementById('catModalTitle').textContent = 'Add Category'; 
+      f.elements['id'].value = ''; 
+    }
     document.getElementById('catModal').classList.add('open');
   }
 
-  function save() {
-    ADMIN.toast('Category create/update API is not available yet.', 'error');
+  async function save(f) {
+    const id = f.elements['id'].value;
+    const data = {
+      name: f.elements['name'].value.trim(),
+      image: f.elements['image'].value.trim(),
+      description: f.elements['description'].value.trim()
+    };
+
+    ADMIN.showLoading(root);
+    try {
+      if (id) {
+        await ADMIN.apiRequest('/categories/' + encodeURIComponent(id), {
+          method: 'PUT',
+          body: JSON.stringify(data)
+        });
+        ADMIN.toast('Category updated successfully', 'success');
+      } else {
+        await ADMIN.apiRequest('/categories', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        ADMIN.toast('Category created successfully', 'success');
+      }
+      document.getElementById('catModal').classList.remove('open');
+      await loadData();
+    } catch (err) {
+      ADMIN.toast(err.message || 'Failed to save category', 'error');
+    } finally {
+      ADMIN.hideLoading(root);
+    }
   }
 
   function del(id) {
-    ADMIN.confirmDialog({ title: 'Delete Category', message: 'Delete this category permanently?', confirmText: 'Delete', danger: true })
-      .then(ok => { if (!ok) return; ADMIN.toast('Category delete API is not available yet.', 'error'); });
+    ADMIN.confirmDialog({ 
+      title: 'Delete Category', 
+      message: 'This action cannot be undone. Delete this category permanently?', 
+      confirmText: 'Delete', 
+      danger: true 
+    }).then(async (ok) => {
+      if (!ok) return;
+      ADMIN.showLoading(root);
+      try {
+        await ADMIN.apiRequest('/categories/' + encodeURIComponent(id), {
+          method: 'DELETE'
+        });
+        ADMIN.toast('Category deleted successfully', 'success');
+        await loadData();
+      } catch (err) {
+        ADMIN.toast(err.message || 'Failed to delete category', 'error');
+      } finally {
+        ADMIN.hideLoading(root);
+      }
+    });
   }
 
   loadData();
